@@ -52,26 +52,43 @@ app.get('/', (req, res) => {
   });
   
     
-    // Endpoint to handle checkout and user account creation
-    app.post('/checkout', async (req, res) => {
-        try {
-          const { name, email, password, address, city, state, zip, ccNumber, expDate, cvv, subscriptionId } = req.body;
-          const hashedPassword = await bcrypt.hash(password, saltRounds);
-          const userResult = await pool.query(
-            'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING *',
-            [name, email, hashedPassword]
-          );
-          const userId = userResult.rows[0].id;
-          await pool.query(
-            'UPDATE subscriptions SET user_id = $1 WHERE id = $2',
-            [userId, subscriptionId]
-          );
-          res.status(201).json(userResult.rows[0]);
-        } catch (error) {
-          console.error('Error during checkout:', error);
-          res.status(500).send('Error during checkout');
-        }
-      });
+// Endpoint to handle checkout and user account creation
+app.post('/checkout', async (req, res) => {
+    console.log(req.body);
+    try {
+      const { name, email, password, address, city, state, zip, ccNumber, expDate, cvv, subscriptionId } = req.body;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      let userResult;
+
+      // Check if the user already exists
+      const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+
+      if (existingUser.rows.length > 0) {
+        // User exists, update the record with additional information
+        userResult = await pool.query(
+          'UPDATE users SET address = $1, city = $2, state = $3, zip = $4, cc_number = $5, exp_date = $6, cvv = $7 WHERE email = $8 RETURNING *',
+          [address, city, state, zip, ccNumber, expDate, cvv, email]
+        );
+      } else {
+        // User does not exist, create a new record
+        userResult = await pool.query(
+          'INSERT INTO users (username, email, password, address, city, state, zip, cc_number, exp_date, cvv) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+          [name, email, hashedPassword, address, city, state, zip, ccNumber, expDate, cvv]
+        );
+      }
+
+      const userId = userResult.rows[0].id;
+      await pool.query(
+        'UPDATE subscriptions SET user_id = $1 WHERE id = $2',
+        [userId, subscriptionId]
+      );
+      res.status(201).json(userResult.rows[0]);
+    } catch (error) {
+      console.error('Error during checkout:', error);
+      res.status(500).send('Error during checkout');
+    }
+});
+
       
   
   

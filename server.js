@@ -89,6 +89,30 @@ app.post('/checkout', async (req, res) => {
     }
 });
 
+app.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+
+        if (userResult.rows.length > 0) {
+            const user = userResult.rows[0];
+            const passwordMatch = await bcrypt.compare(password, user.password);
+
+            if (passwordMatch) {
+                res.status(200).json({ message: 'Login successful', user: { id: user.id, username: user.username, email: user.email } });
+            } else {
+                res.status(401).json({ message: 'Invalid credentials' });
+            }
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Error during login:', error);
+        res.status(500).send('Error during login');
+    }
+});
+
+
       
   
   

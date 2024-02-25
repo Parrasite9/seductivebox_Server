@@ -112,19 +112,43 @@ app.post('/login', async (req, res) => {
     }
 });
 
-
-// Endpoint to get user data
 app.get('/user-data', async (req, res) => {
     try {
-      // Assume the user ID is available in the session or from authentication
-      const userId = req.session.userId;
-      const result = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
-      res.json(result.rows[0]);
+        const email = req.query.email;
+        const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        if (userResult.rows.length > 0) {
+            const userData = userResult.rows[0];
+
+            // Example logic to determine if the user has completed checkout
+            // This might involve checking another table or field in your database
+            const hasCompletedCheckout = userData.checkout_completed; // Adjust this based on your database
+
+            res.json({
+                name: userData.username,
+                address: userData.address,
+                city: userData.city,
+                state: userData.state,
+                zip: userData.zip,
+                ccNumber: userData.cc_number,
+                hasCompletedCheckout: hasCompletedCheckout
+            });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      res.status(500).send('Error fetching user data');
+        console.error('Error fetching user data:', error);
+        res.status(500).send('Error fetching user data');
     }
-  });
+});
+
+
+
+
+
+
+
+
+
   
   // Endpoint to update user address
   app.post('/update-address', async (req, res) => {

@@ -113,6 +113,50 @@ app.post('/login', async (req, res) => {
 });
 
 
+// Endpoint to get user data
+app.get('/user-data', async (req, res) => {
+    try {
+      // Assume the user ID is available in the session or from authentication
+      const userId = req.session.userId;
+      const result = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      res.status(500).send('Error fetching user data');
+    }
+  });
+  
+  // Endpoint to update user address
+  app.post('/update-address', async (req, res) => {
+    try {
+      const { userId, address, city, state, zip } = req.body;
+      await pool.query(
+        'UPDATE users SET address = $1, city = $2, state = $3, zip = $4 WHERE id = $5',
+        [address, city, state, zip, userId]
+      );
+      res.json({ message: 'Address updated successfully' });
+    } catch (error) {
+      console.error('Error updating address:', error);
+      res.status(500).send('Error updating address');
+    }
+  });
+  
+  // Endpoint to update user credit card
+  app.post('/update-credit-card', async (req, res) => {
+    try {
+      const { userId, ccNumber, expDate, cvv } = req.body;
+      await pool.query(
+        'UPDATE users SET cc_number = $1, exp_date = $2, cvv = $3 WHERE id = $4',
+        [ccNumber, expDate, cvv, userId]
+      );
+      res.json({ message: 'Credit card updated successfully' });
+    } catch (error) {
+      console.error('Error updating credit card:', error);
+      res.status(500).send('Error updating credit card');
+    }
+  });
+  
+
       
   
   

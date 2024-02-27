@@ -185,7 +185,10 @@ app.get('/user-data', async (req, res) => {
   
   
   // Start the Express server on the specified port
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
+//   app.listen(port, () => {
+//     console.log(`Server running on port ${port}`);
+//   });
   
+
+// Export the app object for AWS Lambda
+module.exports = app;

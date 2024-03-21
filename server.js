@@ -1,40 +1,67 @@
+// require('dotenv').config();
+require('dotenv').config({ path: 'aws_rds.env' });
+
 const express = require('express'); // Import the Express framework
 const cors = require('cors'); // Import the CORS middleware
 const { Pool } = require('pg'); // Import the Pool class from the pg module
 
 const app = express(); // Create an Express application
 const port = process.env.PORT || 5000; // Set the port for the server
+const serverless = require('serverless-http')
 
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcryptjs')
 const saltRounds = 10;
 
 app.use(cors()); // Enable CORS middleware for all routes
 app.use(express.json()); // Enable parsing of JSON bodies in requests
 
+
+
+console.log(process.env.DB_USER);
+console.log(process.env.DB_HOST);
+console.log(process.env.DB_NAME);
+console.log(process.env.DB_PASSWORD);
+console.log(process.env.DB_PORT);
+
 // Create a new Pool instance to manage connections to the PostgreSQL database
 const pool = new Pool({
-  user: 'isaiah', // Your PostgreSQL username
-  host: 'localhost', // Your PostgreSQL server host
-  database: 'seductivebox', // Your PostgreSQL database name
-  password: '264501', // Your PostgreSQL password
-  port: 5432, // Your PostgreSQL port (default is 5432)
-});
-
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+    ssl: { rejectUnauthorized: false }
+  });
+  
+  
 // Define a route for the root path ('/') that sends a simple response
 app.get('/', (req, res) => {
     res.send('Hello, World!');
   });
+
+  app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+
+  process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+  });
+  
+  
   
   // Define the test-db route
   app.get('/test-db', async (req, res) => {
     try {
-      const result = await pool.query('SELECT NOW()');
-      res.json({ currentTime: result.rows[0].now });
+        const result = await pool.query('SELECT NOW()');
+        res.json({ currentTime: result.rows[0].now });
     } catch (error) {
-      console.error('Error testing database connection:', error);
-      res.status(500).send('Error testing database connection');
+        console.error('Error testing database connection:', error);
+        // Send a JSON object with an error message
+        res.status(500).json({ error: 'Error testing database connection: ' + error.message });
     }
-  });
+});
+
+
 
   // Endpoint to save questionnaire responses
   app.post('/questionnaire', async (req, res) => {
@@ -191,4 +218,4 @@ app.get('/user-data', async (req, res) => {
   
 
 // Export the app object for AWS Lambda
-module.exports = app;
+module.exports.handler = serverless(app);
